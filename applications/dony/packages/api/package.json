@@ -1,0 +1,35 @@
+{
+  "name": "@dony/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsup --config tsup.config.ts",
+    "dev": "node --env-file-if-exists=../../.env --import tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "db:migrate:d1": "node --env-file-if-exists=../../.env --import tsx scripts/migrate-to-d1.ts"
+  },
+  "dependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
+    "@composio/core": "^0.18.0",
+    "@dony/domain": "workspace:*",
+    "@hono/node-server": "^1.19.6",
+    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "ai": "^7.0.93",
+    "better-auth": "1.7.3",
+    "hono": "^4.10.7",
+    "svix": "^2.5.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@types/pg": "^8.20.0",
+    "miniflare": "4.20260730.0",
+    "pg": "^8.21.0",
+    "vitest": "^4.1.4",
+    "wrangler": "4.132.0"
+  }
+}

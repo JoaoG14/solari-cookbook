@@ -1,0 +1,25 @@
+{
+  "name": "dony-solari",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=24.14.1"
+  },
+  "scripts": {
+    "build": "pnpm --filter @dony/domain build && pnpm --filter @dony/api build",
+    "typecheck": "pnpm --filter @dony/domain typecheck && pnpm --filter @dony/api typecheck",
+    "test": "pnpm --filter @dony/domain test && pnpm --filter @dony/api test",
+    "dev:api": "pnpm --filter @dony/api dev",
+    "dev:db": "pnpm --filter @dony/api exec wrangler dev --config d1/wrangler.jsonc --local --ip 127.0.0.1 --port 8788",
+    "dev:fixture": "pnpm --filter @dony/api exec tsx tests/helpers/mobileAgentServer.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
+  }
+}

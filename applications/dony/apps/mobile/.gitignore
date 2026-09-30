@@ -1,0 +1,6 @@
+DerivedData/
+build/
+*.xcresult/
+xcuserdata/
+*.xcuserstate
+evidence/

@@ -1,0 +1,2 @@
+# Must match DONY_D1_TOKEN in the application's .env. Local testing only.
+DONY_D1_TOKEN=dony-solari-local-database

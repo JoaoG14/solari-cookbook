@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "mode": "suggest",
+  "tasks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "title": "Prepare the launch brief",
+      "status": "todo",
+      "parentTaskId": null,
+      "sortOrder": 10,
+      "notes": null,
+      "dueDate": "2026-09-10",
+      "updatedAt": "2026-09-07T12:00:00.000Z",
+      "createdAt": "2026-09-07T12:00:00.000Z",
+      "completedAt": null,
+      "deletedAt": null,
+      "proactivePlanningStatus": null,
+      "proactiveSuggestionPending": false,
+      "proactiveSuggestionLabel": null,
+      "proactiveExecutionStatus": "running",
+      "proactiveAssignedAgentId": "00000000-0000-4000-8000-000000000001",
+      "proactiveQuestion": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "title": "Review the proposal",
+      "status": "todo",
+      "parentTaskId": null,
+      "sortOrder": 11,
+      "notes": null,
+      "dueDate": "2026-09-10",
+      "updatedAt": "2026-09-07T12:00:00.000Z",
+      "createdAt": "2026-09-07T12:00:00.000Z",
+      "completedAt": null,
+      "deletedAt": null,
+      "proactivePlanningStatus": null,
+      "proactiveSuggestionPending": false,
+      "proactiveSuggestionLabel": null,
+      "proactiveExecutionStatus": "blocked",
+      "proactiveAssignedAgentId": "00000000-0000-4000-8000-000000000001",
+      "proactiveQuestion": null
+    }
+  ],
+  "agents": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "General Assistant",
+      "emoji": "dony",
+      "color": "#2080FB",
+      "instructions": "Help with project work.",
+      "welcomeMessage": "What can I help you finish?",
+      "modelOverride": null,
+      "updatedAt": "2026-09-07T12:00:00.000Z"
+    }
+  ],
+  "threads": [
+    {
+      "id": "00000000-0000-4000-8000-000000000020",
+      "agentId": "00000000-0000-4000-8000-000000000001",
+      "origin": "direct",
+      "taskId": null,
+      "title": "Project planning",
+      "createdAt": "2026-09-07T12:00:00.000Z",
+      "updatedAt": "2026-09-07T12:00:00.000Z",
+      "archivedAt": null,
+      "messages": [
+        {
+          "id": "00000000-0000-4000-8000-000000000030",
+          "threadId": "00000000-0000-4000-8000-000000000020",
+          "role": "user",
+          "content": "Summarize the launch priorities.",
+          "status": "complete",
+          "createdAt": "2026-09-07T12:00:00.000Z",
+          "updatedAt": "2026-09-07T12:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000031",
+          "threadId": "00000000-0000-4000-8000-000000000020",
+          "role": "assistant",
+          "content": "The priorities are to finish the landing page, confirm the release date, and review the launch brief.",
+          "status": "complete",
+          "createdAt": "2026-09-07T12:00:00.000Z",
+          "updatedAt": "2026-09-07T12:00:00.000Z"
+        }
+      ],
+      "runId": null,
+      "status": "ready",
+      "activity": null,
+      "instanceNumber": null,
+      "question": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000021",
+      "agentId": "00000000-0000-4000-8000-000000000001",
+      "origin": "task",
+      "taskId": "00000000-0000-4000-8000-000000000010",
+      "title": "Prepare the launch brief",
+      "createdAt": "2026-09-07T12:00:00.000Z",
+      "updatedAt": "2026-09-07T12:00:00.000Z",
+      "archivedAt": null,
+      "messages": [
+        {
+          "id": "00000000-0000-4000-8000-000000000032",
+          "threadId": "00000000-0000-4000-8000-000000000021",
+          "role": "user",
+          "content": "Prepare the launch brief using the project notes.",
+          "status": "complete",
+          "createdAt": "2026-09-07T12:00:00.000Z",
+          "updatedAt": "2026-09-07T12:00:00.000Z"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000033",
+          "threadId": "00000000-0000-4000-8000-000000000021",
+          "role": "assistant",
+          "content": "I\u2019m reviewing the notes and organizing the brief.",
+          "status": "complete",
+          "createdAt": "2026-09-07T12:00:00.000Z",
+          "updatedAt": "2026-09-07T12:00:00.000Z"
+        }
+      ],
+      "runId": "00000000-0000-4000-8000-000000000121",
+      "status": "running",
+      "activity": "Reading the project brief",
+      "instanceNumber": 2,
+      "question": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "agentId": "00000000-0000-4000-8000-000000000001",
+      "origin": "task",
+      "taskId": "00000000-0000-4000-8000-000000000011",
+      "title": "Review the proposal",
+      "createdAt": "2026-09-07T12:00:00.000Z",
+      "updatedAt": "2026-09-07T12:00:00.000Z",
+      "archivedAt": null,
+      "messages": [],
+      "runId": "00000000-0000-4000-8000-000000000122",
+      "status": "blocked",
+      "activity": null,
+      "instanceNumber": 1,
+      "question": {
+        "id": "00000000-0000-4000-8000-000000000040",
+        "runId": "00000000-0000-4000-8000-000000000122",
+        "threadId": "00000000-0000-4000-8000-000000000022",
+        "header": "Proposal review",
+        "question": "Which proposal should I review?",
+        "options": [],
+        "allowCustomAnswer": true,
+        "multiple": false,
+        "questions": [
+          {
+            "id": "proposal",
+            "header": "Source",
+            "question": "Which proposal should I review?",
+            "options": [
+              {
+                "id": "latest",
+                "label": "Latest shared proposal",
+                "description": "Use the latest version in the project folder."
+              }
+            ],
+            "allowCustomAnswer": true,
+            "multiple": false,
+            "responseKind": "resource"
+          }
+        ],
+        "createdAt": "2026-09-07T12:00:00.000Z"
+      }
+    }
+  ],
+  "results": []
+}

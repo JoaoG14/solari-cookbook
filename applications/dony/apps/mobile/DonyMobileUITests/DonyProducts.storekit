@@ -1,0 +1,262 @@
+{
+  "appPolicies": {
+    "eula": "",
+    "policies": [
+      {
+        "locale": "en_US",
+        "policyText": "",
+        "policyURL": ""
+      }
+    ]
+  },
+  "identifier": "DONYLOCAL",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "19.99",
+      "familyShareable": false,
+      "internalID": "eddf71fc-0ce7-461f-adb7-cd4e04232ce5",
+      "localizations": [
+        {
+          "description": "One-time extra AI usage for your Dony plan.",
+          "displayName": "Extra Usage - Small",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.dony.solari.mobile.extra.20",
+      "referenceName": "Extra Usage - Small",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "49.99",
+      "familyShareable": false,
+      "internalID": "40d30337-b33e-4ad6-8b3e-0d2bcedf33c9",
+      "localizations": [
+        {
+          "description": "One-time extra AI usage for your Dony plan.",
+          "displayName": "Extra Usage - Medium",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.dony.solari.mobile.extra.50",
+      "referenceName": "Extra Usage - Medium",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "99.99",
+      "familyShareable": false,
+      "internalID": "d2fc2977-679f-478c-baeb-295cba4f647a",
+      "localizations": [
+        {
+          "description": "One-time extra AI usage for your Dony plan.",
+          "displayName": "Extra Usage - Large",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.dony.solari.mobile.extra.100",
+      "referenceName": "Extra Usage - Large",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {
+    "_compatibilityTimeRate": {
+      "3": 6
+    },
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": [
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Refund Request Sheet"
+      },
+      {
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
+      }
+    ],
+    "_timeRate": 0
+  },
+  "subscriptionGroups": [
+    {
+      "id": "DONYAI",
+      "localizations": [],
+      "name": "Dony AI",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "f8b57c3f-012c-4cbc-ae03-09099a72a333",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "AI assistance with Pro usage.",
+              "displayName": "Dony Pro Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.dony.solari.mobile.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Dony Pro Monthly",
+          "subscriptionGroupID": "DONYAI",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "199.00",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "0c7187d2-6a15-4b5e-92f4-f10935a08186",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "AI assistance with Pro usage.",
+              "displayName": "Dony Pro Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.dony.solari.mobile.pro.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Dony Pro Yearly",
+          "subscriptionGroupID": "DONYAI",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "99.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "8bdf6d7b-82ad-4c0b-8866-bd69fa5962b7",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "AI assistance with Max usage.",
+              "displayName": "Dony Max Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.dony.solari.mobile.plus.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Dony Max Monthly",
+          "subscriptionGroupID": "DONYAI",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "999.00",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "01636dcf-6134-4da2-9821-359452abf334",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "AI assistance with Max usage.",
+              "displayName": "Dony Max Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.dony.solari.mobile.plus.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Dony Max Yearly",
+          "subscriptionGroupID": "DONYAI",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 3,
+          "internalID": "c738f4a6-3365-48ab-b922-cc23503fab03",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Control Dony on your Mac from anywhere. Requires an awake, online Mac.",
+              "displayName": "Dony Connect Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.dony.solari.mobile.connect.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Dony Connect Monthly",
+          "subscriptionGroupID": "DONYAI",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "49.99",
+          "familyShareable": false,
+          "groupNumber": 3,
+          "internalID": "38644750-4fe5-4e6f-8374-9a951e3a31ad",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Control Dony on your Mac from anywhere. Requires an awake, online Mac.",
+              "displayName": "Dony Connect Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.dony.solari.mobile.connect.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Dony Connect Yearly",
+          "subscriptionGroupID": "DONYAI",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}
