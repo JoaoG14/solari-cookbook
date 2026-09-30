@@ -15,6 +15,7 @@ import {
 import { CloudError, cloudNow } from './cloudCommands';
 import type { CloudStore } from './cloudStore';
 import type { composioConnectorService } from './composioConnectorService';
+import type { CloudBrowser } from './cloudBrowser';
 import type { CloudModel } from './cloudModel';
 
 export function createMobileRoutes(
@@ -23,7 +24,8 @@ export function createMobileRoutes(
   configured: boolean,
   connectors: typeof composioConnectorService,
   suggestionsModel?: CloudModel,
-  deleteAccount?: (headers: Headers) => Promise<void>
+  deleteAccount?: (headers: Headers) => Promise<void>,
+  browser?: CloudBrowser
 ) {
   const app = new Hono<{ Variables: { user: AuthUser } }>();
   app.use('*', bodyLimit({ maxSize: 32 * 1024 * 1024 }));
@@ -49,6 +51,20 @@ export function createMobileRoutes(
     if (user instanceof Response) return user;
     context.set('user', user);
     await next();
+  });
+  app.get('/threads/:id/browser', async (c) => {
+    c.header('Cache-Control', 'no-store');
+    const job = browser?.activeJob(c.get('user').id, c.req.param('id'));
+    if (!job) return c.json({ status: 'inactive' });
+    const { rows } = await store.pool.query(
+      "SELECT j.id FROM cloud_jobs j JOIN cloud_workspaces w ON w.id = j.workspace_id WHERE j.id = $1 AND j.lease = $2 AND j.state = 'running' AND w.user_id = $3",
+      [job.id, job.lease, c.get('user').id]
+    );
+    if (!rows.length) return c.json({ status: 'inactive' });
+    const preview = await browser!.preview(job);
+    // Cancellation can arrive while a screenshot is in flight.
+    const active = await store.pool.query("SELECT id FROM cloud_jobs WHERE id = $1 AND lease = $2 AND state = 'running'", [job.id, job.lease]);
+    return c.json(active.rows.length ? preview : { status: 'inactive' });
   });
   app.get('/account', async (c) =>
     c.json({

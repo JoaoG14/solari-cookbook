@@ -44,35 +44,36 @@ final class MobileOnboarding {
         self.defaults = defaults
         completed = defaults.bool(forKey: Self.completedKey)
         step = defaults.object(forKey: "mobileOnboardingStep") == nil
-            ? -1 : min(max(defaults.integer(forKey: "mobileOnboardingStep"), -1), 6)
+            ? -1 : min(max(defaults.integer(forKey: "mobileOnboardingStep"), -1), 4)
         if let data = defaults.data(forKey: "mobileOnboardingTasks"),
            let saved = try? JSONDecoder().decode([FirstTask].self, from: data) {
-            if defaults.bool(forKey: "mobileOnboardingFixedTasks") {
+            if defaults.bool(forKey: "mobileOnboardingBrowserTasks") {
                 tasks = saved
             } else {
-                let oldExamples = ["Draft a project update", "Prepare a meeting agenda", "Research a topic"]
+                let oldExamples = ["Draft a project update", "Prepare a meeting agenda", "Research a topic",
+                    "List recurring paid subscriptions", "Find upcoming renewals and deadlines",
+                    "Prep for next external meeting", "Unsubscribe from promotional emails"]
                 let retained = saved.filter { $0.selected || ($0.emailSubject == nil && !oldExamples.contains($0.title)) }
                 tasks = Self.defaultTasks.filter { task in !retained.contains { $0.title == task.title } } + retained
-                if step == 5 { step = 4 }
                 defaults.set(step, forKey: "mobileOnboardingStep")
             }
         } else {
             tasks = Self.defaultTasks
         }
-        defaults.set(true, forKey: "mobileOnboardingFixedTasks")
+        defaults.set(true, forKey: "mobileOnboardingBrowserTasks")
         persistTasks()
     }
 
     private static var defaultTasks: [FirstTask] {
         [
-            FirstTask(id: UUID(), title: "List recurring paid subscriptions",
-                notes: "Go through my email to find recurring subscriptions. List each service, amount, renewal date, and anything that looks unused."),
-            FirstTask(id: UUID(), title: "Find upcoming renewals and deadlines",
-                notes: "Scan email, calendar, and files for renewals, expirations, appointments, or deadlines in the next 60 days."),
-            FirstTask(id: UUID(), title: "Prep for next external meeting",
-                notes: "Look at my next external meeting and summarize recent context from related emails, docs, and notes."),
-            FirstTask(id: UUID(), title: "Unsubscribe from promotional emails",
-                notes: "Find promotional emails I receive repeatedly and unsubscribe from the mailing lists I no longer read.")
+            FirstTask(id: UUID(), title: "Research solar energy",
+                notes: "Use the cloud browser to read https://en.wikipedia.org/wiki/Solar_energy, follow a relevant link, and summarize three facts with source links."),
+            FirstTask(id: UUID(), title: "Compare browser automation tools",
+                notes: "Use the cloud browser to visit the official Playwright and Selenium websites. Compare their main features and include source links."),
+            FirstTask(id: UUID(), title: "Plan a weekend in Lisbon",
+                notes: "Use the cloud browser to research Lisbon attractions on public travel websites. Suggest a two-day itinerary with source links. Do not make bookings."),
+            FirstTask(id: UUID(), title: "Explore the history of the web",
+                notes: "Use the cloud browser to research the history of the World Wide Web. Summarize key milestones with source links.")
         ]
     }
 

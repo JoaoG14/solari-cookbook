@@ -1062,6 +1062,16 @@ final class CompanionStore {
         try await checkpoint()
         await sync()
     }
+    func browserPreview(threadID: String) async throws -> CloudBrowserPreview {
+        guard let connection, isCloud else { throw CompanionFailure("Sign in to view the cloud browser.") }
+        let preview: CloudBrowserPreview = try await request(server: connection.server, token: connection.token,
+            endpoint: "threads/\(threadID)/browser", method: "GET", timeout: 15)
+        guard self.connection?.accountId == connection.accountId, self.connection?.token == connection.token else {
+            throw CancellationError()
+        }
+        return preview
+    }
+
     func editableAgent(_ id: String) -> SyncedAgent? {
         guard isCloud else { return nil }
         return snapshot?.agents.first { $0.id == id }

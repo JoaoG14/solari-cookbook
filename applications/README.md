@@ -40,3 +40,4 @@ variable it reads and nothing else.
 | Application | Language | What it does |
 | --- | --- | --- |
 | [worldline](worldline) | Python | Snapshot-branch competing plans, verify their artifacts, and replay only the winner |
+| [dony](dony) | Swift / TypeScript | Native iPhone task assistant with a Solari cloud browser and authenticated read-only screenshot preview |

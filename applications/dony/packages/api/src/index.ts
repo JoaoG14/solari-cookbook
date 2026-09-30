@@ -34,6 +34,7 @@ import { BillingStore } from './billing/store';
 import { billingRoutes } from './billing/routes';
 import { CloudError } from './cloudCommands';
 import { createCloudModel } from './cloudModel';
+import { CloudBrowser } from './cloudBrowser';
 import { CloudWorker } from './cloudWorker';
 import { CloudRecovery } from './cloudRecovery';
 import { CloudPush } from './cloudPush';
@@ -647,7 +648,8 @@ const cloudModel = createCloudModel(cloudStore, {
   ...(process.env.DONY_OPENROUTER_API_KEY ? { apiKey: process.env.DONY_OPENROUTER_API_KEY } : {}),
   ...(process.env.DONY_CLOUD_MODEL ? { model: process.env.DONY_CLOUD_MODEL } : {})
 });
-const cloudWorker = new CloudWorker(cloudStore, cloudModel, composioConnectorService);
+const cloudBrowser = new CloudBrowser(process.env.SOLARI_API_KEY);
+const cloudWorker = new CloudWorker(cloudStore, cloudModel, composioConnectorService, cloudBrowser);
 app.route('/v1/billing', billingRoutes(billingStore, appleBilling, authenticateRequest,
   () => cloudWorker.wake(), process.env.DONY_SUPERWALL_WEBHOOK_SECRET));
 const cloudPush = new CloudPush(cloudPool, process.env.DONY_APNS_KEY_ID && process.env.DONY_APNS_TEAM_ID && process.env.DONY_APNS_PRIVATE_KEY && process.env.DONY_APNS_TOPIC ? {
@@ -687,7 +689,8 @@ app.route('/v1/mobile', createMobileRoutes(
         ? 'Sign out, sign back in, and try deleting your account again.'
         : result.message ?? 'Could not delete your Dony account.'
     );
-  }
+  },
+  cloudBrowser
 ));
 
 const migrateAuthDatabase = async (): Promise<void> => {
@@ -717,7 +720,13 @@ const cloudRecovery = new CloudRecovery(cloudPool, () => {
 cloudWorker.start();
 cloudPush.start();
 cloudRecovery.start();
-process.once('SIGTERM', () => { cloudRecovery.stop(); cloudWorker.stop(); cloudPush.stop(); });
+async function shutdown() {
+  cloudRecovery.stop(); cloudWorker.stop(); cloudPush.stop();
+  await cloudBrowser.closeAll();
+  process.exit(0);
+}
+process.once('SIGTERM', () => void shutdown());
+process.once('SIGINT', () => void shutdown());
 
 serve(
   {

@@ -100,6 +100,11 @@ struct TaskAgentWorkView: View {
         if let task = companion.task(item.id) {
             VStack(alignment: .leading, spacing: 16) {
                 TaskAgentStatus(item: item)
+                if companion.isCloud {
+                    ForEach(companion.snapshot?.threads.filter { $0.taskId == task.id && $0.executionTarget == "cloud" && $0.status == "running" } ?? []) { thread in
+                        CloudBrowserButton(threadID: thread.id)
+                    }
+                }
                 if let notes = task.notes, !notes.isEmpty {
                     Text(.init(notes)).font(.subheadline).textSelection(.enabled)
                 }

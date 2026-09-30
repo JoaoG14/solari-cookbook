@@ -41,6 +41,9 @@ importers:
       '@openrouter/ai-sdk-provider':
         specifier: ^3.0.0
         version: 3.1.0(ai@7.0.123(zod@4.6.5))(zod@4.6.5)
+      '@solarisdk/browser':
+        specifier: ^0.1.5
+        version: 0.1.5
       ai:
         specifier: ^7.0.93
         version: 7.0.123(zod@4.6.5)
@@ -66,6 +69,9 @@ importers:
       miniflare:
         specifier: 4.20260730.0
         version: 4.20260730.0
+      patchright-core:
+        specifier: 1.62.2
+        version: 1.62.2
       pg:
         specifier: ^8.21.0
         version: 8.23.0
@@ -1323,6 +1329,10 @@ packages:
     resolution: {integrity: sha512-P1Cz1dWaFfR4IR+U13mqqiGsLFf1KbayybWwdd2vfctdV6hDpUkgCY0nKOLLTMSoRd/jJNjtbqzf13K8DCCXQw==}
     engines: {node: '>=18'}
 
+  '@solarisdk/browser@0.1.5':
+    resolution: {integrity: sha512-TGBSRJlzhQ6cHnxrxCeOwmTXWF0QiMz4YCUxNxSqBkWoH773oDvHYXgd7H2WfCT6LnAKDDH6iBt2MoI158rLjA==}
+    engines: {node: '>=20'}
+
   '@speed-highlight/core@1.2.24':
     resolution: {integrity: sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw==}
 
@@ -1896,6 +1906,11 @@ packages:
         optional: true
       zod:
         optional: true
+
+  patchright-core@1.62.2:
+    resolution: {integrity: sha512-XDl3HB/Kjm9ZBFn4ygD5mxdsqK4aIWNGXdea46XAGd0hvHuJJ84w1M83JqofpXIbD2aJfQ2Rtz4YcqPVrxjSzw==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   path-to-regexp@6.3.0:
     resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
@@ -3097,6 +3112,10 @@ snapshots:
 
   '@sindresorhus/is@7.2.0': {}
 
+  '@solarisdk/browser@0.1.5':
+    dependencies:
+      patchright-core: 1.62.2
+
   '@speed-highlight/core@1.2.24': {}
 
   '@stablelib/base64@1.0.1': {}
@@ -3648,6 +3667,8 @@ snapshots:
       undici: 7.30.0
       ws: 8.21.0
       zod: 4.6.5
+
+  patchright-core@1.62.2: {}
 
   path-to-regexp@6.3.0: {}
 

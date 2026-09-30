@@ -13,7 +13,8 @@
     "test": "pnpm --filter @dony/domain test && pnpm --filter @dony/api test",
     "dev:api": "pnpm --filter @dony/api dev",
     "dev:db": "pnpm --filter @dony/api exec wrangler dev --config d1/wrangler.jsonc --local --ip 127.0.0.1 --port 8788",
-    "dev:fixture": "pnpm --filter @dony/api exec tsx tests/helpers/mobileAgentServer.ts"
+    "dev:fixture": "pnpm --filter @dony/api exec tsx tests/helpers/mobileAgentServer.ts",
+    "dev:demo": "node --env-file-if-exists=.env --import tsx packages/api/scripts/solariDemo.ts"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

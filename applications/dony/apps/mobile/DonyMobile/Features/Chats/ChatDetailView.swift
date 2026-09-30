@@ -9,6 +9,7 @@ struct ChatDetailView: View {
     let conversationID: String
     var initialMessageID: String? = nil
     @State private var showingSearch = false
+    @State private var showingBrowser = false
     @State private var selectedMessageID: String?
     @State private var didScrollToInitialMessage = false
     @State private var showingThinking = false
@@ -30,7 +31,8 @@ struct ChatDetailView: View {
                 let thread = companion.thread(chat.id)
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 24) {
+                        // Resolve full message heights before scrolling as the keyboard and composer resize.
+                        VStack(alignment: .leading, spacing: 24) {
                             Text(chat.createdAt.formatted(date: .abbreviated, time: .shortened))
                                 .font(.caption)
                                 .foregroundStyle(Color("TodoMuted"))
@@ -155,7 +157,13 @@ struct ChatDetailView: View {
                 .navigationTitle(chat.agent.name)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        if companion.isCloud && thread?.executionTarget == "cloud" {
+                            Button("View browser", image: .browserGlobe) { showingBrowser = true }
+                                .disabled(showingThinking)
+                                .blur(radius: showingThinking && !reduceTransparency ? 6 : 0)
+                                .accessibilityIdentifier("view-cloud-browser")
+                        }
                         Button("Search chat", systemImage: "magnifyingglass") { showingSearch = true }
                             .disabled(showingThinking)
                             .blur(radius: showingThinking && !reduceTransparency ? 6 : 0)
@@ -170,6 +178,9 @@ struct ChatDetailView: View {
                     }
                 }
                 .toolbarBackground(Color("TodoSurface"), for: .navigationBar)
+                .sheet(isPresented: $showingBrowser) {
+                    CloudBrowserView(threadID: chat.id)
+                }
             } else {
                 ContentUnavailableView("Conversation unavailable", systemImage: "bubble.left", description: Text("Go back to choose another conversation."))
             }

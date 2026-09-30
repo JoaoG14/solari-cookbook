@@ -56,29 +56,6 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(app.tabBars.firstMatch.exists)
     }
 
-    func testPaywallShowsPlansAndYearlyOptionsThenReturnsToTheFreeList() {
-        launch()
-        signIn()
-        app.buttons["onboarding-skip"].tap()
-        app.buttons["onboarding-secondary"].tap()
-        app.buttons["onboarding-secondary"].tap()
-        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["view-all-plans"].isHittable)
-        XCTAssertTrue(app.buttons["billing-yearly"].isSelected)
-        capture("paywall-yearly")
-        app.buttons["view-all-plans"].tap()
-        XCTAssertTrue(app.staticTexts["Choose your plan"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Max"].exists)
-        XCTAssertTrue(app.staticTexts["Pro"].exists)
-        XCTAssertFalse(app.staticTexts["Pro+"].exists)
-        capture("all-plans-yearly")
-        app.swipeUp()
-        XCTAssertTrue(app.buttons["Connect to Mac"].waitForExistence(timeout: 5))
-        capture("all-plans-mac-option")
-        app.buttons["paywall-close"].tap()
-        XCTAssertTrue(app.tabBars.buttons["To-do List"].waitForExistence(timeout: 10))
-    }
-
     func testOnboardingFollowsLightAppearance() {
         launch(extra: ["-appearance", "light"])
         XCTAssertTrue(element("onboarding-welcome").waitForExistence(timeout: 10))
@@ -90,57 +67,14 @@ final class OnboardingUITests: XCTestCase {
             capture("onboarding-benefit-\(index + 1)-light")
             app.buttons["onboarding-continue"].tap()
         }
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Unsubscribe from promotional emails"].isHittable)
+        XCTAssertTrue(app.staticTexts["Research solar energy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Explore the history of the web"].isHittable)
         capture("onboarding-tasks-light")
         app.buttons["onboarding-secondary"].tap()
-        XCTAssertTrue(app.staticTexts["Let's connect your email"].waitForExistence(timeout: 5))
-        capture("onboarding-tools-light")
-    }
-
-    func testGmailConnectsAfterDefaultTasks() {
-        verifyEmailOnboarding(toolkit: "gmail", name: "Gmail")
-    }
-
-    func testOutlookConnectsAfterDefaultTasks() {
-        verifyEmailOnboarding(toolkit: "outlook", name: "Outlook")
-    }
-
-    private func verifyEmailOnboarding(toolkit: String, name: String) {
-        launch()
-        signIn()
-        app.buttons["onboarding-skip"].tap()
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Find upcoming renewals and deadlines"].exists)
-        XCTAssertTrue(app.staticTexts["Prep for next external meeting"].exists)
-        XCTAssertTrue(app.staticTexts["Unsubscribe from promotional emails"].exists)
-        XCTAssertFalse(app.buttons["onboarding-continue"].isEnabled)
-        capture("onboarding-default-tasks")
-        app.staticTexts["List recurring paid subscriptions"].tap()
-        app.buttons["onboarding-continue"].tap()
-        XCTAssertTrue(element("connector-gmail").waitForExistence(timeout: 10))
-        XCTAssertTrue(element("connector-outlook").exists)
-        for slug in ["googledrive", "googlecalendar", "notion"] {
-            XCTAssertFalse(element("connector-\(slug)").exists)
-        }
-        XCTAssertEqual(app.buttons["onboarding-connect-\(toolkit)"].label, "Connect \(name)")
-        XCTAssertTrue(app.buttons["onboarding-connect-\(toolkit)"].isHittable)
-        capture("onboarding-\(toolkit)")
-        app.buttons["Connect \(name)"].tap()
-        XCTAssertTrue(app.buttons["Manage \(name)"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["onboarding-continue"].label, "Continue")
-        capture("onboarding-\(toolkit)-connected")
-        app.buttons["onboarding-continue"].tap()
-        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 5))
-        app.buttons["onboarding-back"].tap()
-        app.buttons["onboarding-back"].tap()
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["onboarding-continue"].label, "Add selected tasks")
-        XCTAssertTrue(app.buttons["onboarding-continue"].isEnabled)
-        app.buttons["onboarding-continue"].tap()
-        app.buttons["onboarding-secondary"].tap()
-        app.buttons["paywall-close"].tap()
-        XCTAssertTrue(app.buttons["Edit List recurring paid subscriptions"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.buttons["To-do List"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["paywall-close"].exists)
+        XCTAssertFalse(element("connector-gmail").exists)
+        capture("onboarding-arrival-light")
     }
 
     func testWelcomeDemoAndSignIn() {
@@ -189,77 +123,36 @@ final class OnboardingUITests: XCTestCase {
             }
             app.buttons["onboarding-continue"].tap()
         }
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Research solar energy"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["onboarding-continue"].isEnabled)
-        app.staticTexts["List recurring paid subscriptions"].tap()
+        app.staticTexts["Research solar energy"].tap()
         XCTAssertFalse(element("onboarding-task-input").exists)
         XCTAssertFalse(app.buttons["Add your task"].exists)
-        app.staticTexts["Find upcoming renewals and deadlines"].tap()
-        XCTAssertFalse(app.staticTexts["Go through my email to find recurring subscriptions. List each service, amount, renewal date, and anything that looks unused."].exists)
+        app.staticTexts["Compare browser automation tools"].tap()
         capture("onboarding-first-tasks")
         app.buttons["onboarding-continue"].tap()
-        XCTAssertTrue(app.staticTexts["Let's connect your email"].waitForExistence(timeout: 5))
-        app.buttons["onboarding-secondary"].tap()
-        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["paywall-close"].isHittable)
-        XCTAssertFalse(app.buttons["Continue with Google"].exists)
-        capture("onboarding-cloud")
-        app.buttons["paywall-close"].tap()
         XCTAssertTrue(app.tabBars.buttons["To-do List"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.tabBars.buttons["To-do List"].isSelected)
-        XCTAssertTrue(app.buttons["Edit Find upcoming renewals and deadlines"].exists)
+        XCTAssertTrue(app.buttons["Edit Compare browser automation tools"].exists)
         XCTAssertFalse(app.buttons["Edit Review the landing page"].exists)
         capture("onboarding-arrival")
         app.terminate()
         launch(reset: false)
         XCTAssertTrue(app.tabBars.buttons["To-do List"].waitForExistence(timeout: 10))
         app.tabBars.buttons["To-do List"].tap()
-        XCTAssertTrue(app.buttons["Edit Find upcoming renewals and deadlines"].exists)
+        XCTAssertTrue(app.buttons["Edit Compare browser automation tools"].exists)
     }
 
     func testSkipAndEmptyList() {
         launch()
         signIn()
         app.buttons["onboarding-skip"].tap()
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Research solar energy"].waitForExistence(timeout: 5))
         app.buttons["onboarding-secondary"].tap()
-        XCTAssertTrue(app.staticTexts["Let's connect your email"].waitForExistence(timeout: 5))
-        app.buttons["onboarding-secondary"].tap()
-        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 5))
-        app.buttons["paywall-close"].tap()
+        XCTAssertFalse(app.buttons["paywall-close"].exists)
+        XCTAssertFalse(element("connector-gmail").exists)
         XCTAssertTrue(app.tabBars.buttons["To-do List"].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.buttons["Edit List recurring paid subscriptions"].exists)
-    }
-
-    func testToolsAuthorizeAfterOptionalPairing() async throws {
-        let server = URL(string: "http://127.0.0.1:18788")!
-        let data: Data
-        do { (data, _) = try await URLSession.shared.data(from: server.appending(path: "pair")) }
-        catch { throw XCTSkip("Start tests/helpers/connectorMobileServer.ts for connector UI tests.") }
-        let pairing = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: String])
-        launch(extra: ["--companion-testing"])
-        app.launchArguments.removeAll { $0 == "--reset-todos" }
-        app.open(try XCTUnwrap(URL(string: try XCTUnwrap(pairing["url"]))))
-        XCTAssertTrue(element("connect-desktop").waitForExistence(timeout: 5))
-        element("connect-desktop").tap()
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 20))
-        app.staticTexts["List recurring paid subscriptions"].tap()
-        app.buttons["onboarding-continue"].tap()
-        XCTAssertTrue(element("connector-gmail").waitForExistence(timeout: 20))
-        for slug in ["googledrive", "googlecalendar", "notion"] {
-            XCTAssertFalse(element("connector-\(slug)").exists)
-        }
-        XCTAssertFalse(element("connector-figma").exists)
-        capture("onboarding-tools")
-        app.buttons["Connect Gmail"].tap()
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15))
-        var complete = URLRequest(url: server.appending(path: "complete"))
-        complete.httpMethod = "POST"
-        _ = try await URLSession.shared.data(for: complete)
-        XCTAssertTrue(app.buttons["Manage Gmail"].waitForExistence(timeout: 20))
-        capture("onboarding-tools-connected")
-        app.buttons["onboarding-continue"].tap()
-        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["Edit Research solar energy"].exists)
     }
 
     func testLargeTextKeepsNavigationAndContentReachable() {
@@ -275,12 +168,12 @@ final class OnboardingUITests: XCTestCase {
         app.swipeUp()
         capture("onboarding-large-text")
         app.buttons["onboarding-skip"].tap()
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Research solar energy"].waitForExistence(timeout: 5))
         for _ in 0..<8 {
+            if app.staticTexts["Research solar energy"].isHittable { break }
             app.scrollViews.firstMatch.swipeUp()
-            if app.staticTexts["List recurring paid subscriptions"].isHittable { break }
         }
-        XCTAssertTrue(app.staticTexts["List recurring paid subscriptions"].isHittable)
+        XCTAssertTrue(app.staticTexts["Research solar energy"].isHittable)
         capture("onboarding-first-tasks-large-text")
         for _ in 0..<10 {
             if app.buttons["onboarding-secondary"].isHittable { break }
@@ -288,20 +181,8 @@ final class OnboardingUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["onboarding-secondary"].isHittable)
         app.buttons["onboarding-secondary"].tap()
-        capture("onboarding-email-large-text")
-        for _ in 0..<8 {
-            if app.buttons["onboarding-connect-gmail"].isHittable { break }
-            app.swipeUp()
-        }
-        XCTAssertTrue(app.buttons["onboarding-connect-gmail"].isHittable)
-        capture("onboarding-email-large-text-connect")
-        for _ in 0..<8 {
-            if app.buttons["onboarding-secondary"].isHittable { break }
-            app.swipeUp()
-        }
-        XCTAssertTrue(app.buttons["onboarding-secondary"].isHittable)
-        capture("onboarding-email-large-text-actions")
-        app.buttons["onboarding-secondary"].tap()
-        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.tabBars.buttons["To-do List"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["paywall-close"].exists)
+        capture("onboarding-arrival-large-text")
     }
 }

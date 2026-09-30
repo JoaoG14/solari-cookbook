@@ -30,8 +30,6 @@ struct MobileOnboardingView: View {
         Group {
             if progress.completed || progress.step == -1 {
                 OnboardingWelcomeView(signingInProvider: signingInProvider, signInWithApple: signInWithApple, signIn: signIn)
-            } else if progress.step == 6 {
-                PaywallView(back: { progress.step = 5 }, close: finish)
             } else if progress.step < 4 {
                 OnboardingBenefitsView(selection: $progress.step)
             } else {
@@ -48,7 +46,6 @@ struct MobileOnboardingView: View {
         .onChange(of: companion.showingPairing) { _, showing in
             guard !showing && companion.isConnected && !companion.isCloud else { return }
             if progress.step == -1 { progress.step = 4 }
-            else if progress.step == 6 { finish() }
         }
         .alert("Couldn’t finish setup", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) { error = nil }
@@ -65,15 +62,10 @@ struct MobileOnboardingView: View {
                 Spacer()
             }.padding(.horizontal, 16).disabled(busy)
 
-            if progress.step == 5 {
-                ConnectorsView(onboarding: true, onOnboardingContinue: { progress.step = 6 })
-                .environment(\.isOnboardingPreview, isDemoSession)
-            } else if progress.step == 4 {
-                firstTasks
-            }
+            firstTasks
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if progress.step != 5 && !(progress.step == 4 && typeSize.isAccessibilitySize) { footer }
+            if !typeSize.isAccessibilitySize { footer }
         }
         .buttonStyle(OnboardingButtonStyle())
     }
@@ -146,48 +138,33 @@ struct MobileOnboardingView: View {
 
     private var footer: some View {
         VStack(spacing: 4) {
-            Button { advance() } label: {
+            Button { finish() } label: {
                 HStack(spacing: 10) {
                     if busy { ProgressView().tint(OnboardingPalette.background) }
-                    Text(busy ? "Loading…" : buttonTitle).font(.body.weight(.medium))
+                    Text(busy ? "Loading…" : "Add selected tasks").font(.body.weight(.medium))
                 }
                 .foregroundStyle(OnboardingPalette.background)
                 .padding(.horizontal, 18).padding(.vertical, 14)
                 .frame(maxWidth: .infinity, minHeight: 51)
                 .background(OnboardingPalette.foreground, in: Capsule())
-                .opacity(progress.step == 4 && selectedCount == 0 ? 0.4 : 1)
+                .opacity(selectedCount == 0 ? 0.4 : 1)
             }
-            .disabled(busy || progress.step == 4 && selectedCount == 0)
+            .disabled(busy || selectedCount == 0)
             .accessibilityIdentifier("onboarding-continue")
             Button {
-                if progress.step == 4 {
-                    for index in progress.tasks.indices { progress.tasks[index].selected = false }
-                    progress.step = 5
-                }
-                else if isPreview && companion.isDemo { finish() }
-                else { companion.showingPairing = true }
+                for index in progress.tasks.indices { progress.tasks[index].selected = false }
+                finish()
             } label: {
-                Text(progress.step == 4 ? "Start with an empty list" : "Use Dony on my Mac instead")
+                Text("Start with an empty list")
                     .font(.footnote).foregroundStyle(OnboardingPalette.muted)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .disabled(busy).accessibilityIdentifier("onboarding-secondary")
         }
-        .padding(.horizontal, progress.step == 4 ? 24 : 22).padding(.top, 12).padding(.bottom, 4)
-        .frame(maxWidth: progress.step == 4 ? 440 : .infinity).frame(maxWidth: .infinity)
+        .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 4)
+        .frame(maxWidth: 440).frame(maxWidth: .infinity)
         .background(OnboardingPalette.background)
         .buttonStyle(OnboardingButtonStyle())
-    }
-
-    private var buttonTitle: String {
-        if progress.step == 4 { return "Add selected tasks" }
-        guard progress.step == 6 else { return "Continue" }
-        return "Continue"
-    }
-
-    private func advance() {
-        if progress.step == 4 { progress.step = 5; return }
-        finish()
     }
 
     private func signIn() {

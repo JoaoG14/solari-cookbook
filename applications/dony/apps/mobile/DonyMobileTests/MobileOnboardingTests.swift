@@ -42,12 +42,12 @@ final class MobileOnboardingTests: XCTestCase {
 
     func testRelaunchRestoresStepAndSelection() {
         let progress = MobileOnboarding(defaults: defaults)
-        progress.step = 6
+        progress.step = 4
         progress.tasks[0].selected = true
         let restored = MobileOnboarding(defaults: defaults)
-        XCTAssertEqual(restored.step, 6)
+        XCTAssertEqual(restored.step, 4)
         XCTAssertEqual(restored.tasks.map(\.id), progress.tasks.map(\.id))
-        XCTAssertEqual(restored.tasks.filter(\.selected).map(\.title), ["List recurring paid subscriptions"])
+        XCTAssertEqual(restored.tasks.filter(\.selected).map(\.title), ["Research solar energy"])
     }
 
     func testPartialSaveCanRetryAfterRelaunchWithoutDuplicateTasks() throws {
@@ -81,10 +81,10 @@ final class MobileOnboardingTests: XCTestCase {
     func testDefaultsAreUnselectedAndSaveTheirDescriptions() throws {
         let progress = MobileOnboarding(defaults: defaults)
         XCTAssertEqual(progress.tasks.map(\.title), [
-            "List recurring paid subscriptions",
-            "Find upcoming renewals and deadlines",
-            "Prep for next external meeting",
-            "Unsubscribe from promotional emails"
+            "Research solar energy",
+            "Compare browser automation tools",
+            "Plan a weekend in Lisbon",
+            "Explore the history of the web"
         ])
         XCTAssertTrue(progress.tasks.allSatisfy { !$0.selected })
         XCTAssertTrue(progress.tasks.allSatisfy { !($0.notes ?? "").isEmpty })
@@ -95,7 +95,7 @@ final class MobileOnboardingTests: XCTestCase {
         XCTAssertTrue(restored.finish(todos: todos))
         XCTAssertEqual(todos.items.count, 1)
         XCTAssertEqual(todos.items.first?.notes,
-            "Go through my email to find recurring subscriptions. List each service, amount, renewal date, and anything that looks unused.")
+            "Use the cloud browser to read https://en.wikipedia.org/wiki/Solar_energy, follow a relevant link, and summarize three facts with source links.")
     }
 
     func testLegacyTasksKeepUserWorkAndReplaceUnselectedSuggestions() throws {
@@ -117,11 +117,21 @@ final class MobileOnboardingTests: XCTestCase {
         XCTAssertEqual(restored.tasks.map(\.id), progress.tasks.map(\.id))
     }
 
-    func testLegacyEmailStepShowsTasksBeforeConnecting() throws {
-        defaults.set(try JSONEncoder().encode([MobileOnboarding.FirstTask(id: UUID(), title: "Draft a project update")]),
-            forKey: "mobileOnboardingTasks")
-        defaults.set(4, forKey: "mobileOnboardingStep")
-        XCTAssertEqual(MobileOnboarding(defaults: defaults).step, 4)
-        XCTAssertEqual(MobileOnboarding(defaults: defaults).step, 4)
+    func testRemovedStepsReturnToTasksAndPreserveSelectedWork() throws {
+        for oldStep in [5, 6] {
+            let saved = [
+                MobileOnboarding.FirstTask(id: UUID(), title: "List recurring paid subscriptions"),
+                MobileOnboarding.FirstTask(id: UUID(), title: "My selected task", selected: true, notes: "Keep this")
+            ]
+            defaults.removeObject(forKey: "mobileOnboardingBrowserTasks")
+            defaults.set(true, forKey: "mobileOnboardingFixedTasks")
+            defaults.set(try JSONEncoder().encode(saved), forKey: "mobileOnboardingTasks")
+            defaults.set(oldStep, forKey: "mobileOnboardingStep")
+            let progress = MobileOnboarding(defaults: defaults)
+            XCTAssertEqual(progress.step, 4)
+            XCTAssertFalse(progress.tasks.contains { $0.title == "List recurring paid subscriptions" })
+            XCTAssertEqual(progress.tasks.filter(\.selected).map(\.id), [saved[1].id])
+            XCTAssertEqual(MobileOnboarding(defaults: defaults).step, 4)
+        }
     }
 }
