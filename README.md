@@ -4,6 +4,10 @@
 
 Give Dony a task and let its AI agents work on it from a native iPhone app.
 
+[![Dony welcome animation](assets/dony-welcome.gif)](https://github.com/JoaoG14/solari-cookbook/raw/refs/heads/main/assets/dony-welcome.mp4)
+
+[Watch the full-quality video](https://github.com/JoaoG14/solari-cookbook/raw/refs/heads/main/assets/dony-welcome.mp4) · 20 seconds
+
 ## How we use Solari
 
 Dony uses [Solari](https://getsolari.com) to give its agents a cloud browser. Agents can open websites, follow links, fill fields, and read pages to complete tasks. You can watch their progress from the app through a read-only browser preview that refreshes about every two seconds.
