@@ -1062,14 +1062,37 @@ final class CompanionStore {
         try await checkpoint()
         await sync()
     }
-    func browserPreview(threadID: String) async throws -> CloudBrowserPreview {
+    func streamBrowserPreview(threadID: String, onPreview: (CloudBrowserPreview) -> Void) async throws {
         guard let connection, isCloud else { throw CompanionFailure("Sign in to view the cloud browser.") }
-        let preview: CloudBrowserPreview = try await request(server: connection.server, token: connection.token,
-            endpoint: "threads/\(threadID)/browser", method: "GET", timeout: 15)
-        guard self.connection?.accountId == connection.accountId, self.connection?.token == connection.token else {
-            throw CancellationError()
+        var request = URLRequest(url: connection.server.appending(path: "v1/mobile/threads/\(threadID)/browser/stream"))
+        request.setValue("Bearer \(connection.token)", forHTTPHeaderField: "Authorization")
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 15
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForResource = 3600
+        let transport = URLSession(configuration: configuration)
+        defer { transport.invalidateAndCancel() }
+        try await withTaskCancellationHandler {
+            let (bytes, response) = try await transport.bytes(for: request)
+            guard let response = response as? HTTPURLResponse, response.statusCode == 200,
+                  response.mimeType == "text/event-stream" else {
+                throw CompanionFailure("The browser stream is unavailable.")
+            }
+            for try await line in bytes.lines {
+                try Task.checkCancellation()
+                guard self.connection?.accountId == connection.accountId,
+                      self.connection?.token == connection.token else { throw CancellationError() }
+                guard line.hasPrefix("data: ") else { continue }
+                let preview = try JSONDecoder().decode(CloudBrowserPreview.self, from: Data(line.dropFirst(6).utf8))
+                if preview.status == "heartbeat" { continue }
+                if preview.status == "error" { throw CompanionFailure("The browser stream was interrupted.") }
+                onPreview(preview)
+                if preview.status == "inactive" { return }
+            }
+            throw CompanionFailure("The browser stream disconnected.")
+        } onCancel: {
+            transport.invalidateAndCancel()
         }
-        return preview
     }
 
     func editableAgent(_ id: String) -> SyncedAgent? {

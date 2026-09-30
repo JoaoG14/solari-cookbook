@@ -13,6 +13,8 @@ export const browserActionSchema = z.discriminatedUnion('action', [
 ]);
 
 type Page = Awaited<ReturnType<BrowserSession['newPage']>>;
+type CDPSession = Awaited<ReturnType<ReturnType<Page['context']>['newCDPSession']>>;
+export type BrowserStreamEvent = BrowserPreview | { status: 'inactive' | 'error' | 'heartbeat' };
 type Session = { client: Pick<Solari, 'close'>; browser: Pick<BrowserSession, 'close'>; page: Page };
 type Entry = {
   job: CloudJob;
@@ -21,6 +23,11 @@ type Entry = {
   frame?: BrowserPreview;
   capture?: Promise<BrowserPreview>;
   closing?: Promise<void>;
+  viewers: Set<(frame: BrowserStreamEvent) => void>;
+  streamQueue: Promise<void>;
+  cdp?: CDPSession;
+  streamFrame?: BrowserPreview;
+  title?: string;
 };
 export type BrowserPreview = {
   status: 'active';
@@ -71,7 +78,7 @@ export class CloudBrowser {
     let entry = this.entries.get(key);
     if (!entry) {
       if (input.action !== 'open') return { error: 'Open a page first. Each new or resumed run starts with a fresh browser.' };
-      entry = { job, session: this.launch(), queue: Promise.resolve() };
+      entry = { job, session: this.launch(), queue: Promise.resolve(), viewers: new Set(), streamQueue: Promise.resolve() };
       this.entries.set(key, entry);
     }
     const current = entry;
@@ -86,7 +93,12 @@ export class CloudBrowser {
         case 'scroll': await page.mouse.wheel(0, input.direction === 'down' ? 600 : -600); break;
       }
       signal.throwIfAborted();
-      return { url: page.url(), title: await page.title(), content: (await page.locator('body').ariaSnapshot()).slice(0, 24_000) };
+      current.title = await page.title();
+      if (current.streamFrame) {
+        current.streamFrame = { ...current.streamFrame, title: current.title, url: page.url() };
+        for (const viewer of current.viewers) viewer(current.streamFrame);
+      }
+      return { url: page.url(), title: current.title, content: (await page.locator('body').ariaSnapshot()).slice(0, 24_000) };
     });
     current.queue = operation.catch(() => undefined);
     try {
@@ -122,12 +134,83 @@ export class CloudBrowser {
     finally { delete entry.capture; }
   }
 
+  async watch(job: CloudJob, receive: (frame: BrowserStreamEvent) => void): Promise<() => Promise<void>> {
+    const entry = this.entries.get(this.key(job));
+    if (!entry || entry.closing) {
+      receive({ status: 'inactive' });
+      return async () => {};
+    }
+    entry.viewers.add(receive);
+    try {
+      await this.syncStream(entry);
+      if (entry.streamFrame) receive(entry.streamFrame);
+    } catch {
+      entry.viewers.delete(receive);
+      await this.syncStream(entry).catch(() => {});
+      throw new CloudError(503, 'Browser streaming is temporarily unavailable.');
+    }
+    return async () => {
+      entry.viewers.delete(receive);
+      await this.syncStream(entry);
+    };
+  }
+
+  private syncStream(entry: Entry): Promise<void> {
+    // Serialize subscribe/unsubscribe so a retiring viewer cannot stop a new stream.
+    entry.streamQueue = entry.streamQueue.catch(() => {}).then(async () => {
+      if (!entry.viewers.size || entry.closing) {
+        const cdp = entry.cdp;
+        delete entry.cdp;
+        delete entry.streamFrame;
+        if (cdp) {
+          try { await cdp.send('Page.stopScreencast'); }
+          finally { await cdp.detach().catch(() => {}); }
+        }
+        return;
+      }
+      if (entry.cdp) return;
+      const { page } = await entry.session;
+      if (!entry.viewers.size || entry.closing) return;
+      const cdp = await page.context().newCDPSession(page);
+      entry.cdp = cdp;
+      cdp.on('close', () => {
+        if (entry.cdp !== cdp || entry.closing) return;
+        delete entry.cdp;
+        delete entry.streamFrame;
+        for (const viewer of entry.viewers) viewer({ status: 'error' });
+      });
+      cdp.on('Page.screencastFrame', ({ data, sessionId }) => {
+        void cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {
+          if (entry.cdp !== cdp || entry.closing) return;
+          for (const viewer of entry.viewers) viewer({ status: 'error' });
+        });
+        if (entry.closing || entry.cdp !== cdp) return;
+        entry.streamFrame = {
+          status: 'active', image: data, url: page.url(), title: entry.title ?? 'Browser',
+          capturedAt: new Date().toISOString()
+        };
+        for (const viewer of entry.viewers) viewer(entry.streamFrame);
+      });
+      try {
+        await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 65, maxWidth: 1280, maxHeight: 800 });
+      } catch (error) {
+        delete entry.cdp;
+        await cdp.detach().catch(() => {});
+        throw error;
+      }
+    });
+    return entry.streamQueue;
+  }
+
   async close(job: CloudJob) {
     const key = this.key(job);
     const entry = this.entries.get(key);
     if (!entry) return;
     if (entry.closing) return entry.closing;
+    for (const viewer of entry.viewers) viewer({ status: 'inactive' });
+    entry.viewers.clear();
     entry.closing = (async () => {
+      await this.syncStream(entry).catch(() => {});
       try {
         const { browser, client } = await entry.session;
         try { await browser.close(); } finally { await client.close(); }

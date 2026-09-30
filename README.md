@@ -10,7 +10,7 @@ Give Dony a task and let its AI agents work on it from a native iPhone app.
 
 ## How we use Solari
 
-Dony uses [Solari](https://getsolari.com) to give its agents a cloud browser. Agents can open websites, follow links, fill fields, and read pages to complete tasks. You can watch their progress from the app through a read-only browser preview that refreshes about every two seconds.
+Dony uses [Solari](https://getsolari.com) to give its agents a cloud browser. Agents can open websites, follow links, fill fields, and read pages to complete tasks. You can watch their progress from the app through a live, view-only browser stream.
 
 Tap the **globe button beside Search** in a conversation to open the preview. Browser sessions close when a run finishes, is canceled, fails, or pauses for a question.
 

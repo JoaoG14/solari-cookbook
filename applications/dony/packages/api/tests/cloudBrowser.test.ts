@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { BrowserSession, Solari } from '@solarisdk/browser';
@@ -10,7 +11,12 @@ import type { CloudModel } from '../src/cloudModel';
 import { companionTestDatabase } from './helpers/companionDatabase';
 
 function fakeClient() {
+  const cdp = Object.assign(new EventEmitter(), {
+    send: vi.fn().mockResolvedValue(undefined), detach: vi.fn().mockResolvedValue(undefined)
+  });
+  const context = { newCDPSession: vi.fn().mockResolvedValue(cdp) };
   const page = {
+    context: () => context,
     setDefaultTimeout: vi.fn(), setDefaultNavigationTimeout: vi.fn(),
     goto: vi.fn().mockResolvedValue(undefined), url: () => 'https://example.com/',
     title: async () => 'Example', screenshot: vi.fn().mockResolvedValue(Buffer.from('frame')),
@@ -21,7 +27,7 @@ function fakeClient() {
   };
   const browser = { newContext: async () => ({ newPage: async () => page }), close: vi.fn().mockResolvedValue(undefined) };
   const client = { launch: vi.fn().mockResolvedValue(browser), close: vi.fn().mockResolvedValue(undefined) };
-  return { page, browser, client, create: () => client as unknown as Pick<Solari, 'launch' | 'close'> };
+  return { page, browser, client, cdp, context, create: () => client as unknown as Pick<Solari, 'launch' | 'close'> };
 }
 let database: Awaited<ReturnType<typeof companionTestDatabase>>;
 let store: CloudStore;
@@ -122,4 +128,100 @@ it('awaits a pending launch during cleanup and uses a fresh browser on resume', 
   await service.act({ ...job, lease: 'new-lease' }, { action: 'open', url: 'https://example.com' }, signal);
   expect(fake.client.launch).toHaveBeenCalledTimes(2);
   await service.close({ ...job, lease: 'new-lease' });
+});
+
+it('shares a live screencast, acknowledges frames, and stops when the last viewer leaves', async () => {
+  await service.act(job, { action: 'open', url: 'https://example.com' }, signal);
+  const first = vi.fn(); const second = vi.fn();
+  const [stopFirst, stopSecond] = await Promise.all([service.watch(job, first), service.watch(job, second)]);
+  expect(fake.context.newCDPSession).toHaveBeenCalledTimes(1);
+  for (let i = 0; i < 3; i++) fake.cdp.emit('Page.screencastFrame', { data: `frame${i}`, sessionId: i });
+  expect(first).toHaveBeenLastCalledWith(expect.objectContaining({ image: 'frame2', status: 'active' }));
+  expect(second).toHaveBeenCalledTimes(3);
+  expect(fake.cdp.send).toHaveBeenCalledWith('Page.screencastFrameAck', { sessionId: 2 });
+  expect(fake.page.screenshot).not.toHaveBeenCalled();
+  await stopFirst();
+  expect(fake.cdp.detach).not.toHaveBeenCalled();
+  await stopSecond();
+  expect(fake.cdp.send).toHaveBeenCalledWith('Page.stopScreencast');
+  expect(fake.cdp.detach).toHaveBeenCalledTimes(1);
+  expect(fake.browser.close).not.toHaveBeenCalled();
+});
+
+it('ends all viewers on run completion and ignores late frames', async () => {
+  await service.act(job, { action: 'open', url: 'https://example.com' }, signal);
+  const receive = vi.fn();
+  const stop = await service.watch(job, receive);
+  await service.close(job);
+  fake.cdp.emit('Page.screencastFrame', { data: 'late', sessionId: 1 });
+  expect(receive).toHaveBeenLastCalledWith({ status: 'inactive' });
+  expect(receive).not.toHaveBeenCalledWith(expect.objectContaining({ image: 'late' }));
+  await stop();
+});
+
+it('reports stream failure without leaking provider credentials and can reconnect', async () => {
+  await service.act(job, { action: 'open', url: 'https://example.com' }, signal);
+  fake.cdp.send.mockRejectedValueOnce(new Error('wss://secret-provider-token'));
+  await expect(service.watch(job, vi.fn())).rejects.toThrow('Browser streaming is temporarily unavailable.');
+  const receive = vi.fn();
+  const stop = await service.watch(job, receive);
+  fake.cdp.emit('close');
+  expect(receive).toHaveBeenLastCalledWith({ status: 'error' });
+  await stop();
+});
+
+it('authenticates streams and blocks canceled leases before sending queued frames', async () => {
+  await service.act(job, { action: 'open', url: 'https://example.com' }, signal);
+  const routes = createMobileRoutes(store, async headers => {
+    const id = headers.get('authorization')?.replace('Bearer ', '');
+    return id ? { id, name: null, email: null, avatarUrl: null } : Response.json({}, { status: 401 });
+  }, true, connectors, undefined, undefined, service);
+  const path = `/threads/${job.thread_id}/browser/stream`;
+  expect((await routes.request(path)).status).toBe(401);
+  const other = await routes.request(path, { headers: { authorization: 'Bearer bob' } });
+  expect(await other.text()).toContain('"status":"inactive"');
+  expect(fake.context.newCDPSession).not.toHaveBeenCalled();
+  const response = await routes.request(path, { headers: { authorization: 'Bearer alice' } });
+  expect(response.headers.get('cache-control')).toBe('no-store');
+  expect(response.headers.get('content-type')).toBe('text/event-stream');
+  const reader = response.body!.getReader();
+  const read = async () => new TextDecoder().decode((await reader.read()).value);
+  expect(await read()).toContain('heartbeat');
+  fake.cdp.emit('Page.screencastFrame', { data: 'live', sessionId: 1 });
+  expect(await read()).toContain('"image":"live"');
+  await store.pool.query("UPDATE cloud_jobs SET state = 'canceled' WHERE id = $1", [job.id]);
+  fake.cdp.emit('Page.screencastFrame', { data: 'must-not-deliver', sessionId: 2 });
+  const last = await read();
+  expect(last).toContain('inactive');
+  expect(last).not.toContain('must-not-deliver');
+  await reader.cancel();
+  await vi.waitFor(() => expect(fake.cdp.detach).toHaveBeenCalled());
+});
+
+it('releases a stream on disconnect without closing the agent browser', async () => {
+  await service.act(job, { action: 'open', url: 'https://example.com' }, signal);
+  const routes = createMobileRoutes(store, async () => ({ id: 'alice', name: null, email: null, avatarUrl: null }), true, connectors, undefined, undefined, service);
+  const response = await routes.request(`/threads/${job.thread_id}/browser/stream`);
+  const reader = response.body!.getReader();
+  await reader.read();
+  await reader.cancel();
+  await vi.waitFor(() => expect(fake.cdp.detach).toHaveBeenCalled());
+  expect(fake.browser.close).not.toHaveBeenCalled();
+});
+
+it('drops superseded frames and ends an already-open stream when authentication is revoked', async () => {
+  await service.act(job, { action: 'open', url: 'https://example.com' }, signal);
+  let revoked = false;
+  const routes = createMobileRoutes(store, async () => revoked ? Response.json({}, { status: 401 }) :
+    ({ id: 'alice', name: null, email: null, avatarUrl: null }), true, connectors, undefined, undefined, service);
+  const response = await routes.request(`/threads/${job.thread_id}/browser/stream`);
+  const reader = response.body!.getReader();
+  await reader.read();
+  for (let i = 0; i < 100; i++) fake.cdp.emit('Page.screencastFrame', { data: `frame${i}`, sessionId: i });
+  const data = new TextDecoder().decode((await reader.read()).value);
+  expect(data).toContain('"image":"frame99"');
+  expect(data).not.toContain('"image":"frame0"');
+  revoked = true;
+  while (!(await reader.read()).done) { /* consume the last heartbeat before revocation */ }
+  await vi.waitFor(() => expect(fake.cdp.detach).toHaveBeenCalled());
 });

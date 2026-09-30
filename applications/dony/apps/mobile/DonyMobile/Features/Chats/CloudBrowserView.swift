@@ -30,40 +30,22 @@ struct CloudBrowserView: View {
     @State private var preview: CloudBrowserPreview?
     @State private var image: UIImage?
     @State private var error: String?
-    @State private var enlarged = false
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Label("Read-only · Updates about every 2 seconds", systemImage: "eye")
-                    .font(.caption).foregroundStyle(.secondary)
                 if let image, let preview {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(preview.title ?? "Browser").font(.headline).lineLimit(2)
-                        Text(preview.url ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                    }
-                    GeometryReader { geometry in
-                        ScrollView([.horizontal, .vertical]) {
-                            Image(uiImage: image)
-                                .resizable().scaledToFit()
-                                .frame(width: geometry.size.width * (enlarged ? 2.5 : 1),
-                                       height: geometry.size.width * (enlarged ? 2.5 : 1) * image.size.height / image.size.width)
-                                .frame(minWidth: geometry.size.width, minHeight: geometry.size.height, alignment: .topLeading)
-                                .accessibilityLabel("Cloud browser screenshot")
-                                .accessibilityIdentifier("cloud-browser-image")
-                        }
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    HStack {
-                        if let capturedAt = preview.capturedAt {
-                            Text("Updated \(syncDate(capturedAt).formatted(date: .omitted, time: .standard))")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button(enlarged ? "Zoom out" : "Zoom in", systemImage: enlarged ? "minus.magnifyingglass" : "plus.magnifyingglass") {
-                            enlarged.toggle()
-                        }
+                        .accessibilityLabel("Cloud browser screenshot")
+                        .accessibilityValue(preview.title ?? "Browser")
+                        .accessibilityIdentifier("cloud-browser-image")
+                    if let capturedAt = preview.capturedAt {
+                        Text("Live · \(syncDate(capturedAt).formatted(date: .omitted, time: .standard))")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                 } else if preview?.status == "inactive" {
                     ContentUnavailableView("No browser running", systemImage: "globe",
@@ -90,21 +72,24 @@ struct CloudBrowserView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            .task(id: scenePhase) {
+            .task(id: [String(describing: scenePhase), companion.connection?.accountId ?? "", companion.connection?.token ?? ""]) {
+                image = nil
+                preview = nil
+                error = nil
                 guard scenePhase == .active else { return }
                 while !Task.isCancelled {
                     do {
-                        let next = try await companion.browserPreview(threadID: threadID)
-                        try Task.checkCancellation()
-                        preview = next
-                        image = next.image.flatMap { Data(base64Encoded: $0) }.flatMap { UIImage(data: $0) }
-                        error = nil
+                        try await companion.streamBrowserPreview(threadID: threadID) { next in
+                            preview = next
+                            image = next.image.flatMap { Data(base64Encoded: $0) }.flatMap { UIImage(data: $0) }
+                            error = nil
+                        }
                     } catch {
                         if Task.isCancelled { return }
                         // Do not leave a previous account's screenshot on screen after sign-out.
                         image = nil
                         preview = nil
-                        self.error = "Couldn’t refresh the browser. Check your connection."
+                        self.error = "Couldn’t connect to the live browser. Check your connection."
                     }
                     do { try await Task.sleep(for: .seconds(2)) } catch { return }
                 }

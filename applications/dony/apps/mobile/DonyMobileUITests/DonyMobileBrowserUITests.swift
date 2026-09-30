@@ -17,6 +17,13 @@ final class DonyMobileBrowserUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: id).firstMatch
     }
 
+    private func waitForBrowserPage(_ title: String, timeout: TimeInterval) -> Bool {
+        let page = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == %@", title),
+            object: element("cloud-browser-image"))
+        return XCTWaiter.wait(for: [page], timeout: timeout) == .completed
+    }
+
     private func openEmployees() throws {
         let tab = app.tabBars.buttons["Employees"]
         guard tab.waitForExistence(timeout: 10) else {
@@ -88,15 +95,18 @@ final class DonyMobileBrowserUITests: XCTestCase {
         chat.tap()
         XCTAssertTrue(element("view-cloud-browser").waitForExistence(timeout: 10))
         element("view-cloud-browser").tap()
-        XCTAssertTrue(app.staticTexts["Preview first page"].waitForExistence(timeout: 30))
+        XCTAssertTrue(waitForBrowserPage("Preview first page", timeout: 30))
         XCTAssertTrue(element("cloud-browser-image").exists)
+        let streamingBefore = try await request("stats", method: "GET")["frames"] as? Int ?? 0
+        try await Task.sleep(for: .seconds(1))
+        let streamingAfter = try await request("stats", method: "GET")["frames"] as? Int ?? 0
+        XCTAssertGreaterThan(streamingAfter - streamingBefore, 2, "The preview must receive live frames between the old polling intervals")
         XCTAssertEqual(app.webViews.count, 0)
         XCTAssertTrue(app.textFields.allElementsBoundByIndex.allSatisfy { !$0.isHittable })
-        app.buttons["Zoom in"].tap()
-        XCTAssertTrue(app.buttons["Zoom out"].exists)
-        app.buttons["Zoom out"].tap()
+        XCTAssertFalse(app.buttons["Zoom in"].exists)
+        XCTAssertFalse(app.staticTexts["Preview first page"].exists)
         _ = try await request("advance")
-        XCTAssertTrue(app.staticTexts["Preview second page"].waitForExistence(timeout: 15))
+        XCTAssertTrue(waitForBrowserPage("Preview second page", timeout: 15))
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "read-only-browser-preview"
         attachment.lifetime = .keepAlways
@@ -105,15 +115,17 @@ final class DonyMobileBrowserUITests: XCTestCase {
         XCTAssertTrue(element("cloud-browser-error").waitForExistence(timeout: 15))
         XCTAssertFalse(element("cloud-browser-image").exists)
         _ = try await request("online")
-        XCTAssertTrue(app.staticTexts["Preview second page"].waitForExistence(timeout: 15))
+        XCTAssertTrue(waitForBrowserPage("Preview second page", timeout: 15))
         app.buttons["Done"].tap()
         try await Task.sleep(for: .seconds(1))
-        let before = try await request("stats", method: "GET")["requests"] as? Int
+        let closedPreview = try await request("stats", method: "GET")
+        XCTAssertEqual(closedPreview["streams"] as? Int, 0, "Dismissed previews must detach their screencast")
+        let before = closedPreview["requests"] as? Int
         try await Task.sleep(for: .seconds(3))
         let after = try await request("stats", method: "GET")["requests"] as? Int
-        XCTAssertEqual(before, after, "Dismissed previews must stop polling")
+        XCTAssertEqual(before, after, "Dismissed previews must stop reconnecting")
         element("view-cloud-browser").tap()
-        XCTAssertTrue(app.staticTexts["Preview second page"].waitForExistence(timeout: 15))
+        XCTAssertTrue(waitForBrowserPage("Preview second page", timeout: 15))
         _ = try await request("finish")
         XCTAssertTrue(element("cloud-browser-inactive").waitForExistence(timeout: 15))
         XCTAssertFalse(element("cloud-browser-image").exists)

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import {
   cloudCommandSchema,
@@ -15,7 +16,7 @@ import {
 import { CloudError, cloudNow } from './cloudCommands';
 import type { CloudStore } from './cloudStore';
 import type { composioConnectorService } from './composioConnectorService';
-import type { CloudBrowser } from './cloudBrowser';
+import type { BrowserStreamEvent, CloudBrowser } from './cloudBrowser';
 import type { CloudModel } from './cloudModel';
 
 export function createMobileRoutes(
@@ -65,6 +66,68 @@ export function createMobileRoutes(
     // Cancellation can arrive while a screenshot is in flight.
     const active = await store.pool.query("SELECT id FROM cloud_jobs WHERE id = $1 AND lease = $2 AND state = 'running'", [job.id, job.lease]);
     return c.json(active.rows.length ? preview : { status: 'inactive' });
+  });
+  app.get('/threads/:id/browser/stream', async (c) => {
+    const userId = c.get('user').id;
+    const job = browser?.activeJob(userId, c.req.param('id'));
+    const response = streamSSE(c, async stream => {
+      let stop: (() => Promise<void>) | undefined;
+      try {
+        if (!job) {
+          await stream.writeSSE({ data: JSON.stringify({ status: 'inactive' }) });
+          return;
+        }
+        const isRunning = async () => {
+          const { rows } = await store.pool.query(
+            "SELECT j.id FROM cloud_jobs j JOIN cloud_workspaces w ON w.id = j.workspace_id WHERE j.id = $1 AND j.lease = $2 AND j.state = 'running' AND w.user_id = $3",
+            [job.id, job.lease, userId]);
+          return rows.length > 0;
+        };
+        if (!await isRunning()) {
+          await stream.writeSSE({ data: JSON.stringify({ status: 'inactive' }) });
+          return;
+        }
+        // Keep only the newest frame when the phone or network falls behind.
+        let pending: BrowserStreamEvent | undefined;
+        stop = await browser!.watch(job, frame => {
+          if (pending?.status !== 'inactive' && pending?.status !== 'error') pending = frame;
+        });
+        let checkedAt = 0;
+        const startedAt = Date.now();
+        let receivedFrame = false;
+        while (!stream.aborted) {
+          const frame = pending;
+          pending = undefined;
+          const heartbeat = Date.now() - checkedAt >= 1000;
+          if (frame || heartbeat) {
+            if (heartbeat) {
+              const user = await authenticate(c.req.raw.headers);
+              if (user instanceof Response || user.id !== userId) break;
+              checkedAt = Date.now();
+            }
+            // Recheck ownership and the lease before every frame, including after cancellation.
+            if (!await isRunning()) {
+              await stream.writeSSE({ data: JSON.stringify({ status: 'inactive' }) });
+              break;
+            }
+            const event = frame ?? { status: 'heartbeat' };
+            await stream.writeSSE({ data: JSON.stringify(event) });
+            if (event.status === 'inactive' || event.status === 'error') break;
+            if (event.status === 'active') receivedFrame = true;
+          }
+          if (!receivedFrame && Date.now() - startedAt > 15_000) throw new Error('No browser frames');
+          await stream.sleep(80);
+        }
+      } catch {
+        // Never leak provider endpoints or credentials through streaming errors.
+        if (!stream.aborted) await stream.writeSSE({ data: JSON.stringify({ status: 'error' }) });
+      } finally {
+        await stop?.().catch(() => {});
+      }
+    });
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('X-Accel-Buffering', 'no');
+    return response;
   });
   app.get('/account', async (c) =>
     c.json({
